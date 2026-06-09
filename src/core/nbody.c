@@ -510,3 +510,85 @@ void nbody_step_rk4(Simulation *sim, double dt)
 
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Diagnostics
+   ─────────────────────────────────────────────────────────────────────────────*/
+
+double nbody_total_energy(const Simulation *sim)
+{
+
+    int i, j;
+    double energy = 0.0;
+
+    /* ── Kinetic energy: KE = Sum  1/2 m v² ───────────────────────────────── */
+
+    for (i = 0; i < sim->n; i++){
+        double v2 = sim->bodies[i].vx * sim->bodies[i].vx
+                  + sim->bodies[i].vy * sim->bodies[i].vy;
+        energy += 0.5 * sim->bodies[i].mass*v2;
+    }
+
+    /* ── Gravitational potential energy: PE = -Σ_{i<j} G*mi*mj / r ─────── */
+    /*
+     * We use the *un-softened* distance here because potential energy is a
+     * diagnostic quantity, not a force computation.  Using the softened
+     * distance would make the reported energy inconsistent with what you
+     * would calculate analytically from the positions.
+     *
+     * The potential is negative (bound systems have E < 0 overall).
+     */
+
+    for (i = 0; i < sim->n; i++){
+        for (j = i +1; j < sim->n; j++){
+
+            double dx = sim->bodies[j].x - sim->bodies[i].x;
+            double dy = sim->bodies[j].y - sim->bodies[i].y;
+            double dist = sqrt(dx*dx + dy*dy);
+            energy -= NBODY_G * sim->bodies[i].mass * sim->bodies[j].mass / dist;
+
+        }
+    }
+
+    return energy;
+}
+
+void nbody_total_momentum(const Simulation *sim, double *px, double *py)
+{
+    int i;
+    *px = 0.0;
+    *py = 0.0;
+ 
+    for (i = 0; i < sim->n; i++) {
+        *px += sim->bodies[i].mass * sim->bodies[i].vx;
+        *py += sim->bodies[i].mass * sim->bodies[i].vy;
+    }
+}
+
+void nbody_barycentre(const Simulation *sim, double *cx, double *cy)
+{
+
+    int i;
+    double total_mass = 0.0;
+    *cx = 0.0;
+    *cy = 0.0;
+
+    for (i = 0; i < sim->n; i++) {
+        double m = sim->bodies[i].mass;
+        total_mass += m;
+        *cx        += m * sim->bodies[i].x;
+        *cy        += m * sim->bodies[i].y;
+    }
+
+
+    /*
+     * Guard against a zero-mass simulation (all bodies have mass 0).
+     * This should never happen in practice — nbody_add_body does not
+     * validate mass — but we avoid a NaN return just in case.
+     */
+    
+    if (total_mass > 0.0){
+        *cx /= total_mass;
+        *cy /= total_mass;
+    }
+
+}
