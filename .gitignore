@@ -1,0 +1,62 @@
+# ==========================================
+# Python & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_chache/
+
+# ==========================================
+# Environments & Packages
+# ==========================================
+.venv/
+venv/
+env/
+ENV/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+
+# ==========================================
+# C/C++ Compiled Binaries (Extensions)
+# ==========================================
+*.so
+*.dylib
+*.dll
+*.lib
+*.pyd
+*.a
+*.o
+*.obj
+
+# ==========================================
+# PyInstaller Outputs
+# ==========================================
+# PyInstaller creates a 'build' folder and a '.spec' file, plus the 'dist' folder
+# Note: Keep your .spec file if you customized it, otherwise ignore it
+dist/
+build/
+*.manifest
+*.spec
+
+# ==========================================
+# Editors and IDEs (VS Code, PyCharm, Cursor)
+# ==========================================
+.vscode/
+.idea/
+*.directory
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+.DS_Store
+Thumbs.db
