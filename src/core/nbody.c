@@ -564,6 +564,17 @@ void nbody_total_momentum(const Simulation *sim, double *px, double *py)
     }
 }
 
+double nbody_body_kinetic_energy(const Simulation *sim, int idx)
+{
+
+    if (idx < 0 || idx >= sim->n)
+        return 0.0;
+    double v2 = sim->bodies[idx].vx * sim->bodies[idx].vx
+              + sim->bodies[idx].vy * sim->bodies[idx].vy;
+    
+    return 0.5 * sim->bodies[idx].mass * v2;
+}
+
 void nbody_barycentre(const Simulation *sim, double *cx, double *cy)
 {
 

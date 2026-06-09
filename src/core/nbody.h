@@ -541,6 +541,28 @@ NBODY_API void nbody_total_momentum(const Simulation *sim,
 
 
 /**
+ * @brief  Compute the kinetic energy of a single body.
+ *
+ * @details
+ * @f[
+ *   KE_i = \tfrac{1}{2} m_i \left( v_{x,i}^2 + v_{y,i}^2 \right)
+ * @f]
+ *
+ * This is provided as a convenience for GUIs and analysis tools that want
+ * to display per-body energy without having to recompute the full system
+ * energy via @ref nbody_total_energy.  It does not include the gravitational
+ * potential energy contributed by this body's interaction with others.
+ *
+ * @param[in] sim  Simulation containing the body (read-only).
+ * @param[in] idx  Zero-based index of the body (must satisfy 0 ≤ idx < sim->n).
+ *
+ * @return  Kinetic energy of body @p idx (M☉ AU² yr⁻²).
+ * @return  0.0 if @p idx is out of range.
+ */
+NBODY_API double nbody_body_kinetic_energy(const Simulation *sim, int idx);
+
+
+/**
  * @brief  Compute the position of the system's barycentre (centre of mass).
  *
  * @details
