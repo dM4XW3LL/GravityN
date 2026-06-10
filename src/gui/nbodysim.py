@@ -1,27 +1,20 @@
 #!/usr/bin/env python3
 """
-N-body Gravitational Simulator
-────────────────────────────────
-A GUI application that simulates gravitational N-body systems in real time.
-Evolved from an earlier project of an Keplerian simulator (orbitsim.py), 
-every body here exerts a gravitational force on every other body at every timestep, 
-i.e. orbits are not fixed ellipses but emerge from 
-(and are continuously perturbed by) the full coupled equations of motion.
+nbodysim.py
+────────────
+Main entry point for the N-body Gravitational Simulator GUI.
  
-The physics engine is the compiled C dynamic library (nbody.so / .dylib / .dll),
-called via ctypes.  The GUI is built with tkinter and matplotlib.
+This file is responsible purely for the user interface: building the tkinter
+window, driving the matplotlib animation loop, and connecting user actions
+(spawning bodies, changing integrators, toggling the info panel) to the
+physics engine.
  
-Physical units (same as kepler.c / nbody.c):
-  Length  — Astronomical Unit  (AU)
-  Time    — Julian year        (yr)
-  Mass    — Solar mass         (M☉)
-  G       = 4π² AU³ yr⁻² M☉⁻¹
+All C interop lives in :mod:`nbody_engine`.
+All body data modelling lives in :mod:`body`.
  
-Usage:
-    # Compile the shared library first (from the project root):
+Usage (from the project root)::
+ 
     gcc -O2 -fPIC -shared -o nbody.so src/core/nbody.c src/core/kepler.c -lm
- 
-    # Then run:
     python3 src/gui/nbodysim.py
 """
 
