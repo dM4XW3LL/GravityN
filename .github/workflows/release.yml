@@ -1,0 +1,79 @@
+name: Build and Attach Release Binaries and Executables
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-artifacts:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            executable_name: gravityn_linux
+            c_lib: nbody.so
+            data_sep: ":"
+          - os: macos-latest
+            executable_name: gravityn_mac
+            c_lib: nbody.dylib
+            data_sep: ":"
+          - os: windows-latest
+            executable_name: gravityn_windows.exe
+            c_lib: nbody.dll
+            data_sep: ";"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install matplotlib pillow pyinstaller
+
+      # Build the C engine first so PyInstaller can bundle it.
+      # The Makefile auto-detects the platform and produces nbody.so
+      # (Linux) or nbody.dylib (macOS) with the correct flags.
+      - name: Build C library (Linux / macOS)
+        if: matrix.os != 'windows-latest'
+        run: make
+
+      # Run the engine's validation suite. If an integrator or a
+      # conservation law is broken, fail here rather than shipping it.
+      - name: Run engine tests (Linux / macOS)
+        if: matrix.os != 'windows-latest'
+        run: make test
+
+      # windows-latest doesn't reliably have GNU make on PATH, so build
+      # the library directly with gcc — mirrors the Windows branch of
+      # the Makefile (no -fPIC, no -lm needed on Windows).
+      - name: Build C library (Windows)
+        if: matrix.os == 'windows-latest'
+        run: gcc -O2 -Wall -Wextra -shared -o nbody.dll src/core/nbody.c src/core/kepler.c
+
+      # Bundle the GUI and the C library into a single executable.
+      # nbody_engine.py and body.py live next to nbodysim.py and are
+      # picked up automatically by PyInstaller's import analysis.
+      # NOTE: --add-data uses ':' as the src/dest separator on
+      # Linux/macOS but ';' on Windows — that's what data_sep is for.
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --onefile --name=${{ matrix.executable_name }} --hidden-import="PIL._tkinter_finder" --add-data "${{ matrix.c_lib }}${{ matrix.data_sep }}." src/gui/nbodysim.py
+
+      # Upload both the raw shared library and the bundled executable.
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.c_lib }}
+            dist/${{ matrix.executable_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
