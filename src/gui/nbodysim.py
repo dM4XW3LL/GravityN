@@ -130,6 +130,7 @@ class NBodySimApp(tk.Tk):
 
         self._build_ui()
         self._style_ttk()
+        self._add_sun_to_engine()
         self._draw_sun()
 
         self.after(100, self._resize_check)
@@ -187,14 +188,20 @@ class NBodySimApp(tk.Tk):
         mode_row = tk.Frame(sec2, bg=BG_PANEL)
         mode_row.pack(fill="x", padx=8, pady=4)
  
-        for text, value in [("Orbital elements", "elements"),
-                             ("Cartesian  (x, y, vx, vy)", "cartesian")]:
-            tk.Radiobutton(
-                mode_row, text=text, variable=self._spawn_mode,
-                value=value, command=self._on_spawn_mode_changed,
-                bg=BG_PANEL, fg=TEXT_MAIN, selectcolor=BG_WIDGET,
-                activebackground=BG_PANEL, font=FONT_LABEL
-            ).pack(side="left", padx=(0, 8))
+        sec2 = self._section(panel, "SPAWN MODE", row); row += 1
+        mode_row = tk.Frame(sec2, bg=BG_PANEL)
+        mode_row.pack(fill="x", padx=8, pady=6)
+
+        tk.Label(mode_row, text="Input mode", fg=TEXT_DIM, bg=BG_PANEL,
+                 font=FONT_LABEL).pack(side="left")
+        self._spawn_mode_combo = ttk.Combobox(
+            mode_row, textvariable=self._spawn_mode,
+            values=["elements", "cartesian"],
+            state="readonly", font=FONT_SMALL, width=12
+        )
+        self._spawn_mode_combo.pack(side="left", padx=8)
+        self._spawn_mode_combo.bind("<<ComboboxSelected>>",
+                                    lambda _: self._on_spawn_mode_changed())
 
         # ── Orbital elements section ──────────────────────────────────────
         self._sec_elements = self._section(panel, "ORBITAL PARAMETERS", row)
@@ -416,6 +423,26 @@ class NBodySimApp(tk.Tk):
                 linewidth=0.5)
         ax.set_xlim(-12, 12)
         ax.set_ylim(-12, 12)
+
+    def _add_sun_to_engine(self) -> None:
+        """
+        Add the Sun as a real 1 M☉ body at rest at the origin.
+ 
+        The Sun must exist in the C engine as a Body 
+        so that its gravity acts on every other body.
+        Drawing it as a matplotlib marker alone has no effect
+        on the physics.
+ 
+        The Sun is always index 0 in the engine's body array.  All planet
+        indices are therefore offset by 1 relative to self.bodies.
+        """
+        self.engine.add_body_cartesian(
+            name="Sun", mass=1.0,
+            x=0.0, y=0.0, vx=0.0, vy=0.0
+        )
+
+
+
 
     def _draw_sun(self) -> None:
         """Draw the Sun marker at the origin with a layered glow effect."""
@@ -709,8 +736,8 @@ class NBodySimApp(tk.Tk):
                 f"Cannot add more than {NBodyEngine.__module__} bodies.")
             return
  
-        idx = self.engine.n - 1
-        x0, y0 = self.engine.position(idx)
+        engine_idx = self.engine.n - 1
+        x0, y0 = self.engine.position(engine_idx)
  
         body.trail_line, = self.ax.plot(
             [], [], color=body.color, lw=1.2, alpha=0.55, zorder=3)
@@ -728,7 +755,7 @@ class NBodySimApp(tk.Tk):
  
         # Set reference energy once we have at least two bodies
         # (one body alone has no potential energy to track).
-        if self._E0 is None and self.engine.n > 1:
+        if self._E0 is None and self.engine.n >= 2:
             self._E0 = self.engine.total_energy()
  
         self._refresh_body_list()
@@ -744,7 +771,7 @@ class NBodySimApp(tk.Tk):
         if not sel:
             return
         idx = sel[0]
-        self.engine.remove_body(idx)
+        self.engine.remove_body(idx+1)
  
         body = self.bodies[idx]
         for artist in (body.trail_line, body.dot, body.label_text):
@@ -844,7 +871,7 @@ class NBodySimApp(tk.Tk):
  
         # Update artists
         for i, body in enumerate(self.bodies):
-            x, y = self.engine.position(i)
+            x, y = self.engine.position(i+1)
             body.trail_x.append(x)
             body.trail_y.append(y)
             body.dot.set_data([x], [y])
@@ -901,13 +928,13 @@ class NBodySimApp(tk.Tk):
         # Per-body fields
         if (self._selected_body is None
                 or self._selected_idx is None
-                or self._selected_idx >= self.engine.n):
+                or self._selected_idx >= len(self.bodies)):
             return
  
-        idx         = self._selected_idx
-        x, y        = self.engine.position(idx)
-        _, _, spd   = self.engine.velocity(idx)
-        ke          = self.engine.body_kinetic_energy(idx)
+        engine_idx         = self._selected_idx + 1
+        x, y        = self.engine.position(engine_idx)
+        _, _, spd   = self.engine.velocity(engine_idx)
+        ke          = self.engine.body_kinetic_energy(engine_idx)
  
         self._info_x.configure(text=f"{x:.4f} AU")
         self._info_y.configure(text=f"{y:.4f} AU")
@@ -921,9 +948,9 @@ class NBodySimApp(tk.Tk):
             widget.destroy()
  
         for j, other in enumerate(self.bodies):
-            if j == idx:
+            if j == self._selected_idx:
                 continue
-            dist = self.engine.distance_between(idx, j)
+            dist = self.engine.distance_between(engine_idx, j + 1)
             row  = tk.Frame(self._info_dist_frame, bg=BG_PANEL)
             row.pack(fill="x", pady=1)
             tk.Label(row, text=f"\u2192 {other.name}", fg=TEXT_DIM,
@@ -954,6 +981,7 @@ class NBodySimApp(tk.Tk):
         self._E0            = None
  
         self.engine.reset()
+        self._add_sun_to_engine()
         self._refresh_body_list()
  
         self.ax.cla()
