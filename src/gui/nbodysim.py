@@ -360,6 +360,32 @@ class NBodySimApp(tk.Tk):
             command=self._remove_selected_body
         ).pack(fill="x", padx=8, pady=(0, 4))
 
+        # JSON save / load
+        json_row = tk.Frame(sec4, bg=BG_PANEL)
+        json_row.pack(fill="x", padx=8, pady=(0, 8))
+        tk.Button(
+            json_row, text="\U0001f4be  SAVE", font=FONT_SMALL,
+            bg=BG_WIDGET, fg=GREEN, activebackground=BORDER,
+            relief="flat", cursor="hand2", width=10,
+            command=self._save_presets
+        ).pack(side="left", padx=(0, 4))
+        tk.Button(
+            json_row, text="\U0001f4c2  LOAD", font=FONT_SMALL,
+            bg=BG_WIDGET, fg=ACCENT, activebackground=BORDER,
+            relief="flat", cursor="hand2", width=10,
+            command=self._load_presets
+        ).pack(side="left")
+ 
+        # Footer
+        tk.Frame(panel, bg=BORDER, height=1).grid(
+            row=row, column=0, sticky="ew"); row += 1
+        tk.Label(
+            panel,
+            text="Engine: C (nbody.c + kepler.c)  |  GUI: Python/Tk",
+            fg=TEXT_DIM, bg=BG_PANEL, font=("Courier New", 7)
+        ).grid(row=row, column=0, pady=6)
+
+
 
  
 
