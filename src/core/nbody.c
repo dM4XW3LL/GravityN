@@ -126,8 +126,8 @@ static void compute_accel_array(Body *bodies, int n)
 
             /* Body j is accelerated *towards body i by G*m_i/dist^3    */
             /* Opposite reaction -> Newton's third law                  */
-            bodies[j].ax += f*bodies[i].mass*dx;
-            bodies[j].ay += f*bodies[i].mass*dy;
+            bodies[j].ax -= f*bodies[i].mass*dx;
+            bodies[j].ay -= f*bodies[i].mass*dy;
         }
 
     }
@@ -148,10 +148,23 @@ void nbody_init(Simulation *sim)
      *   - n to 0
      *   - t to 0.0
      */
-    (void)sim; /* supresses "unused parameter" warning*/
+    memset(sim, 0, sizeof(Simulation));
 
 
 }
+
+void nbody_free(Simulation *sim)
+{
+    /*
+     * All storage is embedded in the struct — nothing to free.
+     * This stub is here for API consistency and future-proofing:
+     * if dynamic allocation is ever introduced (e.g. to support more
+     * than NBODY_MAX_BODIES bodies), cleanup code goes here without
+     * changing the callers.
+     */
+    (void)sim;   /* suppress "unused parameter" warning */
+}
+
 
 int nbody_add_body(Simulation *sim, const Body *body)
 {
